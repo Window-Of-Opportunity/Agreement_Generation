@@ -1,85 +1,76 @@
 from collections import OrderedDict
 from PyPDF2 import PdfFileWriter, PdfFileReader
+from PyPDF2.generic import BooleanObject, NameObject, IndirectObject
 
+FORM_VALUES = {
+  "Name": "Name",
+  "Phone": "Phone",
+  "Email": "Email",
+  "City": "City",
+  "Zip": "Zip",
+  "Date": "Date",
+  "Price": "Price",
+  "Total": "Total",
+  "Day": "Day",
+  "Start Date": "Start Date",
+  "Completion Date": "Completion Date",
+  "Billing Address": "Billing Address",
+  "Job Site Address": "Job Site Address",
+  "Month": "Month",
+  "Year": "Year",
+  "Digital Signature": "Digital Signature",
+  "Permit": True,
+  "Right To Cancel": True,
+  "Progress Payment": "Progress Payment",
+  "Down Payment": "Down Payment" 
+}
 
-def _getFields(obj, tree=None, retval=None, fileobj=None):
-    """
-    Extracts field data if this PDF contains interactive form fields.
-    The *tree* and *retval* parameters are for recursive use.
-
-    :param fileobj: A file object (usually a text file) to write
-        a report to on all interactive form fields found.
-    :return: A dictionary where each key is a field name, and each
-        value is a :class:`Field<PyPDF2.generic.Field>` object. By
-        default, the mapping name is used for keys.
-    :rtype: dict, or ``None`` if form data could not be located.
-    """
-    fieldAttributes = {'/FT': 'Field Type', '/Parent': 'Parent', '/T': 'Field Name', '/TU': 'Alternate Field Name',
-                       '/TM': 'Mapping Name', '/Ff': 'Field Flags', '/V': 'Value', '/DV': 'Default Value'}
-    if retval is None:
-        retval = OrderedDict()
-        catalog = obj.trailer["/Root"]
+def set_need_appearances_writer(writer: PdfFileWriter):
+    # See 12.7.2 and 7.7.2 for more information: http://www.adobe.com/content/dam/acom/en/devnet/acrobat/pdfs/PDF32000_2008.pdf
+    try:
+        catalog = writer._root_object
         # get the AcroForm tree
-        if "/AcroForm" in catalog:
-            tree = catalog["/AcroForm"]
-        else:
-            return None
-    if tree is None:
-        return retval
+        if "/AcroForm" not in catalog:
+            writer._root_object.update({
+                NameObject("/AcroForm"): IndirectObject(len(writer._objects), 0, writer)})
 
-    obj._checkKids(tree, retval, fileobj)
-    for attr in fieldAttributes:
-        if attr in tree:
-            # Tree is a field
-            obj._buildField(tree, retval, fileobj, fieldAttributes)
-            break
+        need_appearances = NameObject("/NeedAppearances")
+        writer._root_object["/AcroForm"][need_appearances] = BooleanObject(True)
+        return writer
 
-    if "/Fields" in tree:
-        fields = tree["/Fields"]
-        for f in fields:
-            field = f.getObject()
-            obj._buildField(field, retval, fileobj, fieldAttributes)
+    except Exception as e:
+        print('set_need_appearances_writer() catch : ', repr(e))
+        return writer
 
-    return retval
+def updateCheckboxValues(page, fields):
 
-
-def get_form_fields(infile):
-    infile = PdfFileReader(open(infile, 'rb'))
-    fields = _getFields(infile)
-    return OrderedDict((k, v.get('/V', '')) for k, v in fields.items())
-
-
-def update_form_values(infile, outfile, newvals=None):
-    pdf = PdfFileReader(open(infile, 'rb'))
-    writer = PdfFileWriter()
-
-    for i in range(pdf.getNumPages()):
-        page = pdf.getPage(i)
-        try:
-            if newvals:
-                writer.updatePageFormFieldValues(page, newvals)
-            else:
-                writer.updatePageFormFieldValues(page,
-                                                 {k: f'#{i} {k}={v}'
-                                                  for i, (k, v) in enumerate(get_form_fields(infile).items())
-                                                  })
-            writer.addPage(page)
-        except Exception as e:
-            print(repr(e))
-            writer.addPage(page)
-
-    with open(outfile, 'wb') as out:
-        writer.write(out)
-
+    for j in range(0, len(page['/Annots'])):
+        writer_annot = page['/Annots'][j].getObject()
+        for field in fields:
+            if writer_annot.get('/T') == field:
+                writer_annot.update({
+                    NameObject("/V"): NameObject(fields[field]),
+                    NameObject("/AS"): NameObject(fields[field])
+                })
 
 if __name__ == '__main__':
-    from pprint import pprint
+    infile = "2020 Agreement Marvin.pdf"
+    outfile = "out.pdf"
 
-    pdf_file_name = '2020 Agreement Marvin.pdf'
+    pdf = PdfFileReader(open(infile, "rb"), strict=False)
+    if "/AcroForm" in pdf.trailer["/Root"]:
+        pdf.trailer["/Root"]["/AcroForm"].update(
+            {NameObject("/NeedAppearances"): BooleanObject(True)})
 
-    pprint(get_form_fields(pdf_file_name))
+    pdf2 = PdfFileWriter()
+    set_need_appearances_writer(pdf2)
+    if "/AcroForm" in pdf2._root_object:
+        pdf2._root_object["/AcroForm"].update(
+            {NameObject("/NeedAppearances"): BooleanObject(True)})
 
-    #update_form_values(pdf_file_name, 'out-' + pdf_file_name)  # enumerate & fill the fields with their own names
-    #update_form_values(pdf_file_name, 'out2-' + pdf_file_name,
-    #                   {'my_fieldname_1': 'My Value',
-    #                    'my_fieldname_2': 'My Another 💎alue'})  # update the form fields
+
+    pdf2.addPage(pdf.getPage(0))
+    pdf2.updatePageFormFieldValues(pdf2.getPage(0), FORM_VALUES)
+
+    outputStream = open(outfile, "wb")
+    pdf2.write(outputStream)
