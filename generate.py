@@ -1,35 +1,37 @@
 from collections import OrderedDict
 from PyPDF2 import PdfFileWriter, PdfFileReader
 from PyPDF2.generic import BooleanObject, NameObject, IndirectObject
+import datetime
 
+#Sample form values, in dictionary format
 FORM_VALUES = {
   "Name": "Name",
   "Phone": "Phone",
   "Email": "Email",
   "City": "City",
   "Zip": "Zip",
-  "Date": "Date",
+  "Date": f"{datetime.date.today().month}/{datetime.date.today().day}/{datetime.date.today().year}",
   "Price": "Price",
   "Total": "Total",
-  "Day": "Day",
-  "Start Date": "Start Date",
-  "Completion Date": "Completion Date",
+  "Day": datetime.date.today().day,
+  "Start Date": "MM/DD/YYYY",
+  "Completion Date": "MM/DD/YYYY",
   "Billing Address": "Billing Address",
   "Job Site Address": "Job Site Address",
-  "Month": "Month",
-  "Year": "Year",
+  "Month": datetime.date.today().month,
+  "Year": datetime.date.today().year,
   "Digital Signature": "Digital Signature",
   "Permit": True,
   "Right To Cancel": True,
   "Progress Payment": "Progress Payment",
-  "Down Payment": "Down Payment" 
+  "Down Payment": "$0",
+  "Window-Door" : "W-D"
 }
 
-def set_need_appearances_writer(writer: PdfFileWriter):
-    # See 12.7.2 and 7.7.2 for more information: http://www.adobe.com/content/dam/acom/en/devnet/acrobat/pdfs/PDF32000_2008.pdf
+# Modification of the pdfwriter in order to be up to current pdf spec, or else form will not update properly upon generation.
+def update_form_properly_writer(writer: PdfFileWriter):
     try:
         catalog = writer._root_object
-        # get the AcroForm tree
         if "/AcroForm" not in catalog:
             writer._root_object.update({
                 NameObject("/AcroForm"): IndirectObject(len(writer._objects), 0, writer)})
@@ -42,18 +44,21 @@ def set_need_appearances_writer(writer: PdfFileWriter):
         print('set_need_appearances_writer() catch : ', repr(e))
         return writer
 
-def updateCheckboxValues(page, fields):
+# Method to update check boxes, WORK IN PROGRESS.
+# def updateCheckboxValues(page, fields):
+#     for j in range(0, len(page['/Annots'])):
+#         writer_annot = page['/Annots'][j].getObject()
+#         for field in fields:
+#             if writer_annot.get('/T') == field:
+#                 writer_annot.update({
+#                     NameObject("/V"): NameObject(fields[field]),
+#                     NameObject("/AS"): NameObject(fields[field])
+#                 })
 
-    for j in range(0, len(page['/Annots'])):
-        writer_annot = page['/Annots'][j].getObject()
-        for field in fields:
-            if writer_annot.get('/T') == field:
-                writer_annot.update({
-                    NameObject("/V"): NameObject(fields[field]),
-                    NameObject("/AS"): NameObject(fields[field])
-                })
-
+# Program that reads and fills pdf form, generating an output pdf file with form filled.
+# requires designated agreement file, read readme file for instructions to obtain file.
 if __name__ == '__main__':
+
     infile = "2020 Agreement Marvin.pdf"
     outfile = "out.pdf"
 
@@ -63,7 +68,7 @@ if __name__ == '__main__':
             {NameObject("/NeedAppearances"): BooleanObject(True)})
 
     pdf2 = PdfFileWriter()
-    set_need_appearances_writer(pdf2)
+    update_form_properly_writer(pdf2)
     if "/AcroForm" in pdf2._root_object:
         pdf2._root_object["/AcroForm"].update(
             {NameObject("/NeedAppearances"): BooleanObject(True)})
