@@ -27,6 +27,11 @@ FORM_VALUES = {
   "Window-Door" : "W-D"
 }
 
+# Designated values for flattening
+FLATTEN_VALUES = {
+    "Window-Door" : "W-D"
+}
+
 # Modification of the pdfwriter in order to be up to current pdf spec, or else form will not update properly upon generation.
 def updateFormProperlyWriter(writer: PdfFileWriter):
     try:
@@ -54,36 +59,6 @@ def updateFormProperlyWriter(writer: PdfFileWriter):
 #                     NameObject("/AS"): NameObject(fields[field])
 #                 })
 
-def generateFlattenedPdf(infile, outfile):
-    pdf = PdfFileReader(open(infile, "rb"), strict=False)
-    if "/AcroForm" in pdf.trailer["/Root"]:
-        pdf.trailer["/Root"]["/AcroForm"].update(
-            {NameObject("/NeedAppearances"): BooleanObject(True)})
-
-    pdf2 = PdfFileWriter()
-    updateFormProperlyWriter(pdf2)
-    if "/AcroForm" in pdf2._root_object:
-        pdf2._root_object["/AcroForm"].update(
-            {NameObject("/NeedAppearances"): BooleanObject(True)})
-
-
-    pdf2.addPage(pdf.getPage(0))
-    # Update form values.
-    pdf2.updatePageFormFieldValues(pdf2.getPage(0), FORM_VALUES)
-
-    # Flatten form fields.
-    flat_page = pdf2.getPage(0)
-    for j in range(0, len(flat_page['/Annots'])):
-        writer_annot = flat_page['/Annots'][j].getObject()
-        for field in FORM_VALUES: 
-            if writer_annot.get('/T') == field:
-                writer_annot.update({
-                    NameObject("/Ff"): NumberObject(1)   # make ReadOnly
-                })
-    
-    outputStream = open(outfile, "wb")
-    pdf2.write(outputStream)
-
 def generatePdf(infile, outfile):
     pdf = PdfFileReader(open(infile, "rb"), strict=False)
     if "/AcroForm" in pdf.trailer["/Root"]:
@@ -101,6 +76,16 @@ def generatePdf(infile, outfile):
     # Update form values.
     pdf2.updatePageFormFieldValues(pdf2.getPage(0), FORM_VALUES)
     
+    # Flatten form fields.
+    flat_page = pdf2.getPage(0)
+    for j in range(0, len(flat_page['/Annots'])):
+        writer_annot = flat_page['/Annots'][j].getObject()
+        for field in FLATTEN_VALUES: 
+            if writer_annot.get('/T') == field:
+                writer_annot.update({
+                    NameObject("/Ff"): NumberObject(1)   # make ReadOnly
+                })
+
     outputStream = open(outfile, "wb")
     pdf2.write(outputStream)
 
@@ -110,5 +95,4 @@ if __name__ == '__main__':
 
     infile = "2020 Agreement Marvin.pdf"
 
-    # generateFlattenedPdf(infile, "Flattened-out.pdf")
-    # generatePdf(infile, "out.pdf")
+    generatePdf(infile, "out.pdf")
