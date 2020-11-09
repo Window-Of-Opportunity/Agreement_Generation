@@ -2,35 +2,47 @@ from PyPDF2 import PdfFileWriter, PdfFileReader
 from PyPDF2.generic import BooleanObject, NameObject, IndirectObject, NumberObject
 import datetime
 
-#Sample form values, in dictionary format
+# import the manufacturer and data from the database
+# add template pdf with manufacturer
+# 
+
+
 FORM_VALUES = {
-  "Name": "Name",
-  "Phone": "Phone",
-  "Email": "Email",
-  "City": "City",
-  "Zip": "Zip",
-  "Date": f"{datetime.date.today().month}/{datetime.date.today().day}/{datetime.date.today().year}",
-  "Price": "Price",
-  "Total": "Total",
-  "Day": datetime.date.today().day,
-  "Start Date": "MM/DD/YYYY",
-  "Completion Date": "MM/DD/YYYY",
-  "Billing Address": "Billing Address",
-  "Job Site Address": "Job Site Address",
-  "Month": datetime.date.today().month,
-  "Year": datetime.date.today().year,
-#   "Digital Signature": "Digital Signature",
-  "Permit": True,
-#   "Right To Cancel": True,
-  "Progress Payment": "Progress Payment",
-  "Down Payment": "$0",
-  "Window-Door" : "W-D"
+    "Name": "Name",
+    "Phone": "Phone",
+    "Email": "Email",
+    "City": "City",
+    "Zip": "Zip",
+    "Date": f"{datetime.date.today().month}/{datetime.date.today().day}/{datetime.date.today().year}",
+    "Price": "Price",
+    "Total": "Total",
+    "Day": datetime.date.today().day,
+    "Start Date": "MM/DD/YYYY",
+    "Completion Date": "MM/DD/YYYY",
+    "Billing Address": "Billing Address",
+    "Job Site Address": "Job Site Address",
+    "Month": datetime.date.today().month,
+    "Year": datetime.date.today().year,
+    #   "Digital Signature": "Digital Signature",
+    "Permit": True,
+    #   "Right To Cancel": True,
+    "Progress Payment": "Progress Payment",
+    "Down Payment": "$0", # can hard code this to 0
+    "Window-Door" : "W-D"
 }
 
 # Designated values for flattening
 FLATTEN_VALUES = {
     "Window-Door" : "W-D"
 }
+
+#Manufacturers include amerimax, marvin
+def constructAgreement(manufacturer):
+    if manufacturer == "MARVIN":
+        generatePdf("2020 Agreement Marvin.pdf", "out.pdf")
+    elif manufacturer == "AMERIMAX":
+        generatePdf("2020 Agreement Amerimax with Patio Door.pdf", "out.pdf")
+
 
 # Modification of the pdfwriter in order to be up to current pdf spec, or else form will not update properly upon generation.
 def updateFormProperlyWriter(writer: PdfFileWriter):
@@ -48,17 +60,6 @@ def updateFormProperlyWriter(writer: PdfFileWriter):
         print('updateFormProperlyWriter() catch : ', repr(e))
         return writer
 
-# Method to update check boxes, WORK IN PROGRESS.
-# def updateCheckboxValues(page, fields):
-#     for j in range(0, len(page['/Annots'])):
-#         writer_annot = page['/Annots'][j].getObject()
-#         for field in fields:
-#             if writer_annot.get('/T') == field:
-#                 writer_annot.update({
-#                     NameObject("/V"): NameObject(fields[field]),
-#                     NameObject("/AS"): NameObject(fields[field])
-#                 })
-
 def generatePdf(infile, outfile):
     pdf = PdfFileReader(open(infile, "rb"), strict=False)
     if "/AcroForm" in pdf.trailer["/Root"]:
@@ -72,9 +73,10 @@ def generatePdf(infile, outfile):
             {NameObject("/NeedAppearances"): BooleanObject(True)})
 
 
-    pdf2.addPage(pdf.getPage(0))
-    # Update form values.
-    pdf2.updatePageFormFieldValues(pdf2.getPage(0), FORM_VALUES)
+    #fix pages
+    for x in range(pdf.getNumPages() - 1):
+        pdf2.addPage(pdf.getPage(x)) 
+        pdf2.updatePageFormFieldValues(pdf2.getPage(x), FORM_VALUES)
     
     # Flatten form fields.
     flat_page = pdf2.getPage(0)
@@ -93,6 +95,5 @@ def generatePdf(infile, outfile):
 # requires designated agreement file, read readme file for instructions to obtain file.
 if __name__ == '__main__':
 
-    infile = "2020 Agreement Marvin.pdf"
-
-    generatePdf(infile, "out.pdf")
+    #constructAgreement("AMERIMAX")
+    constructAgreement("MARVIN")
