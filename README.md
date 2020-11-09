@@ -58,7 +58,7 @@ def updateFormProperlyWriter(writer: PdfFileWriter):
         print('updateFormProperlyWriter() catch : ', repr(e))
         return writer
 ```
-`updateFormProperlyWriter(writer: PdfFileWriter)` is a method that takes a pdfFileWriter and modifies it so that the resulting pdf file properly displays edited fields in the browser.
+`updateFormProperlyWriter(writer: PdfFileWriter)` is a method that takes a pdfFileWriter and modifies it so that the resulting pdf file properly displays edited fields in the browser. This is caused by PyPDF2 not being up to spec with current PDF standards.
 
 ## generatePdf(infile, outfile)
 ```python
@@ -91,8 +91,3 @@ def generatePdf(infile, outfile):
     pdf2.write(outputStream)
 ```
 `generatePdf(infile, outfile)` is a method that takes an input pdf file and an output pdf file. Using these, a pdfFileReader and pdfFileReader object is created. After the pdf has been written to, designated fields for field flattening are flattened(unable to be edited by the user).
-
-=======
-You must run `pip install PyPDF2`, in order to run the script navigate to the directory of the program and run `python generate.py`  
-Make sure that the agreement pdf file is in the root directory with the script.  
-Ask Jeffrey for agreement file necessary to run the program.
