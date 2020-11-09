@@ -12,6 +12,7 @@ Program to automatically generate the business agreement, based off of python mo
 `generate.py` is a python script written in order to generate a business agreement. The script takes a template pdf form and values. The script then uses module PyPDF2 to fill in form fields and write to an output pdf file. The output pdf file contains all specified fields filled.
 
 # Setup
+<<<<<<< HEAD
 You must run `pip install PyPDF2` in order to run the script navigate to the directory of the program and run `python generate.py`  
 Ask Jeffrey for agreement file(s) necessary to run the program.
 
@@ -92,3 +93,8 @@ def generatePdf(infile, outfile):
 ```
 `generatePdf(infile, outfile)` is a method that takes an input pdf file and an output pdf file. Using these, a pdfFileReader and pdfFileReader object is created. After the pdf has been written to, designated fields for field flattening are flattened(unable to be edited by the user).
 
+=======
+You must run `pip install PyPDF2`, in order to run the script navigate to the directory of the program and run `python generate.py`  
+Make sure that the agreement pdf file is in the root directory with the script.  
+Ask Jeffrey for agreement file necessary to run the program.
+>>>>>>> d0a74fa15ddaf2773d0904ae713b0a42a5738932
