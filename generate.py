@@ -6,7 +6,6 @@ import datetime
 # add template pdf with manufacturer
 # 
 
-
 FORM_VALUES = {
     "Name": "Name",
     "Phone": "Phone",
@@ -26,6 +25,7 @@ FORM_VALUES = {
     #   "Digital Signature": "Digital Signature",
     "Permit": True,
     #   "Right To Cancel": True,
+    "Warranty Link":"TBD" ,
     "Progress Payment": "Progress Payment",
     "Down Payment": "$0", # can hard code this to 0
     "Window-Door" : "W-D"
@@ -33,15 +33,23 @@ FORM_VALUES = {
 
 # Designated values for flattening
 FLATTEN_VALUES = {
-    "Window-Door" : "W-D"
+    "Window-Door" : "",
+    "Warranty Link": "" 
 }
 
 #Manufacturers include amerimax, marvin
 def constructAgreement(manufacturer):
     if manufacturer == "MARVIN":
-        generatePdf("2020 Agreement Marvin.pdf", "out.pdf")
+        FORM_VALUES["Warranty Link"] = "https://www3.marvin.com/WebDoc/Marvin%20Warranty%20effective%202019-07-25.pdf"
+        FORM_VALUES["Start Date"] = "12 Weeks"
+        generatePdf("2020 Agreement Template.pdf", "out.pdf")
     elif manufacturer == "AMERIMAX":
-        generatePdf("2020 Agreement Amerimax with Patio Door.pdf", "out.pdf")
+        FORM_VALUES["Warranty Link"] = "http://www.amerimaxwindows.com/assets/docs/Amerimax-Windows-Doors-Warranty.pdf"
+        FORM_VALUES["Start Date"] = "4-6 Weeks"
+        generatePdf("2020 Agreement Template.pdf", "out.pdf")
+    elif manufacturer == "TEMPLATE":
+        FORM_VALUES["Warranty Link"] = "TEMPLATE"
+        generatePdf("2020 Agreement Template.pdf", "out.pdf")
 
 
 # Modification of the pdfwriter in order to be up to current pdf spec, or else form will not update properly upon generation.
@@ -73,7 +81,7 @@ def generatePdf(infile, outfile):
             {NameObject("/NeedAppearances"): BooleanObject(True)})
 
 
-    #fix pages
+    # Add pages
     for x in range(pdf.getNumPages() - 1):
         pdf2.addPage(pdf.getPage(x)) 
         pdf2.updatePageFormFieldValues(pdf2.getPage(x), FORM_VALUES)
@@ -91,9 +99,12 @@ def generatePdf(infile, outfile):
     outputStream = open(outfile, "wb")
     pdf2.write(outputStream)
 
+#amerimax 4-6 weeks painted - double time
+#marvin 12 weeks
 # Program that reads and fills pdf form, generating an output pdf file with form filled.
 # requires designated agreement file, read readme file for instructions to obtain file.
 if __name__ == '__main__':
 
     #constructAgreement("AMERIMAX")
     constructAgreement("MARVIN")
+    #constructAgreement("TEMPLATE")
